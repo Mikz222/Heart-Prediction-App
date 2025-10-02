@@ -1,47 +1,34 @@
-import os
 import streamlit as st
 import pandas as pd
-import cloudpickle
-from sklearn.model_selection import train_test_split
-from sklearn.pipeline import Pipeline
-from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import StandardScaler, OneHotEncoder
-from sklearn.impute import SimpleImputer
-from sklearn.naive_bayes import GaussianNB
 import joblib
 
+# ==============================
+# Load Model
+# ==============================
 @st.cache_resource
 def load_model():
     return joblib.load("heart_nb_pipeline.joblib")
 
-    
-    # Try cloudpickle first, fallback to joblib
-    try:
-        with open(model_path, "rb") as f:
-            return cloudpickle.load(f)
-    except Exception as e1:
-        try:
-            return joblib.load(model_path)
-        except Exception as e2:
-            st.error(f"Failed to load model with both cloudpickle and joblib:\n{e1}\n{e2}")
-            return None
-
 model = load_model()
 
-# --- UI ---
+# ==============================
+# App UI
+# ==============================
 st.set_page_config(page_title="Heart Disease Prediction", page_icon="❤️", layout="centered")
-st.title("❤️ Heart Disease Prediction App (Framingham Dataset)")
+st.title("❤️ Heart Disease Prediction App")
 st.markdown("Enter patient details below to predict the likelihood of heart disease.")
 
-# --- Input Form ---
+# ==============================
+# User Input
+# ==============================
 def user_input():
     age = st.number_input("Age", min_value=20, max_value=100, value=40)
-    gender = st.selectbox("Gender", ["male", "female"])
-    education = st.selectbox("Education", ["uneducated", "primaryschool", "graduate", "postgraduate"])
+    gender = st.selectbox("Gender", ["male", "female"])   # match training
+    education = st.selectbox("Education", ["1", "2", "3", "4"])  # check your dataset encoding
     currentSmoker = st.selectbox("Current Smoker", [0, 1])
     cigsPerDay = st.number_input("Cigarettes per Day", min_value=0, max_value=60, value=0)
     BPMeds = st.selectbox("On Blood Pressure Medication", [0, 1])
-    prevalentStroke = st.selectbox("History of Stroke", ["no", "yes"])
+    prevalentStroke = st.selectbox("History of Stroke", [0, 1])   # numeric instead of yes/no
     prevalentHyp = st.selectbox("Hypertension", [0, 1])
     diabetes = st.selectbox("Diabetes", [0, 1])
     totChol = st.number_input("Total Cholesterol (mg/dL)", min_value=100, max_value=600, value=200)
@@ -53,7 +40,7 @@ def user_input():
 
     data = {
         "age": age,
-        "Gender": gender,
+        "gender": gender,   # ✅ lowercase
         "education": education,
         "currentSmoker": currentSmoker,
         "cigsPerDay": cigsPerDay,
@@ -71,10 +58,11 @@ def user_input():
 
     return pd.DataFrame([data])
 
-# --- Collect Inputs ---
+# ==============================
+# Prediction
+# ==============================
 input_df = user_input()
 
-# --- Predict ---
 if st.button("🔍 Predict"):
     proba = model.predict_proba(input_df)[:, 1][0]
     pred = model.predict(input_df)[0]
@@ -87,11 +75,3 @@ if st.button("🔍 Predict"):
 
     st.markdown("### 📊 Entered Patient Data")
     st.dataframe(input_df, use_container_width=True)
-
-
-
-
-
-
-
-
